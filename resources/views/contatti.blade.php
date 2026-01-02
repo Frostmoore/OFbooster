@@ -142,76 +142,215 @@
                         <span class="fw-semibold">dove sei ora</span> + <span class="fw-semibold">dove vuoi arrivare</span>.
                     </p>
 
-                    <form class="ws-form" action="{{ route('contatti.send') }}" method="POST">
+                    <form class="ws-form" action="{{ route('contatti.send') }}" method="POST" novalidate>
                         @csrf
 
-                        <div class="mb-3">
-                            <label for="name" class="form-label fw-semibold">Nome</label>
-                            <input
-                                type="text"
-                                class="form-control @error('name') is-invalid @enderror"
-                                id="name"
-                                name="name"
-                                value="{{ old('name') }}"
-                                placeholder="Es. Giulia"
-                                required
-                                autocomplete="name"
-                            >
-                            @error('name')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
+                        <div class="row g-3">
+                            <!-- Nome -->
+                            <div class="col-md-6">
+                                <label for="name" class="form-label fw-semibold">Nome</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-white">
+                                        <i class="fa-solid fa-user text-danger"></i>
+                                    </span>
+                                    <input
+                                        type="text"
+                                        class="form-control @error('name') is-invalid @enderror"
+                                        id="name"
+                                        name="name"
+                                        value="{{ old('name') }}"
+                                        placeholder="Es. Giulia"
+                                        required
+                                        autocomplete="name"
+                                    >
+                                    @error('name')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                            </div>
 
-                        <div class="mb-3">
-                            <label for="email" class="form-label fw-semibold">Email</label>
-                            <input
-                                type="email"
-                                class="form-control @error('email') is-invalid @enderror"
-                                id="email"
-                                name="email"
-                                value="{{ old('email') }}"
-                                placeholder="Es. giulia@email.com"
-                                required
-                                autocomplete="email"
-                            >
-                            @error('email')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
+                            <!-- Email -->
+                            <div class="col-md-6">
+                                <label for="email" class="form-label fw-semibold">Email</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-white">
+                                        <i class="fa-solid fa-at text-danger"></i>
+                                    </span>
+                                    <input
+                                        type="email"
+                                        class="form-control @error('email') is-invalid @enderror"
+                                        id="email"
+                                        name="email"
+                                        value="{{ old('email') }}"
+                                        placeholder="Es. giulia@email.com"
+                                        required
+                                        autocomplete="email"
+                                    >
+                                    @error('email')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                            </div>
 
-                        <div class="mb-3">
-                            <label for="message" class="form-label fw-semibold">Messaggio</label>
-                            <textarea
-                                class="form-control @error('message') is-invalid @enderror"
-                                id="message"
-                                name="message"
-                                rows="6"
-                                required
-                                placeholder="Esempio: ho già IG con X follower / parto da zero / obiettivo: X€ al mese / disponibilità per shooting a... / cosa vuoi gestire tu e cosa vuoi delegare."
-                            >{{ old('message') }}</textarea>
-                            @error('message')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
+                            <!-- Instagram (opzionale) -->
+                            <div class="col-md-6">
+                                <label for="instagram" class="form-label fw-semibold">
+                                    Instagram / Social principale <span class="text-muted fw-normal">(opzionale)</span>
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-white">
+                                        <i class="fa-brands fa-instagram text-danger"></i>
+                                    </span>
+                                    <input
+                                        type="text"
+                                        class="form-control @error('instagram') is-invalid @enderror"
+                                        id="instagram"
+                                        name="instagram"
+                                        value="{{ old('instagram') }}"
+                                        placeholder="@tuonome oppure link"
+                                        autocomplete="off"
+                                    >
+                                    @error('instagram')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                                <div class="form-text">Se non ce l’hai, scrivi “parto da zero”.</div>
+                            </div>
 
-                        <div class="ws-note mb-4">
-                            <div class="d-flex gap-2">
-                                <i class="fa-solid fa-circle-info mt-1 text-danger"></i>
-                                <div class="small text-muted">
-                                    Non chiediamo link pubblici o informazioni inutili. Se serve, approfondiamo dopo in privato.
+                            <!-- Punto di partenza (opzionale) -->
+                            <div class="col-md-6">
+                                <label for="start_level" class="form-label fw-semibold">
+                                    Da dove parti <span class="text-muted fw-normal">(opzionale)</span>
+                                </label>
+                                <select
+                                    id="start_level"
+                                    name="start_level"
+                                    class="form-select @error('start_level') is-invalid @enderror"
+                                >
+                                    <option value="">Seleziona…</option>
+                                    <option value="zero"        @selected(old('start_level')==='zero')>Da zero (nessun profilo / profilo vuoto)</option>
+                                    <option value="social"      @selected(old('start_level')==='social')>Ho social attivi ma niente funnel</option>
+                                    <option value="onlyfans"    @selected(old('start_level')==='onlyfans')>Ho già OnlyFans ma rende poco</option>
+                                    <option value="restart"     @selected(old('start_level')==='restart')>Ho iniziato male: voglio ripartire pulito</option>
+                                </select>
+                                @error('start_level')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+
+                            <!-- Obiettivo (opzionale) -->
+                            <div class="col-md-6">
+                                <label for="goal" class="form-label fw-semibold">
+                                    Obiettivo mensile <span class="text-muted fw-normal">(opzionale)</span>
+                                </label>
+                                <select id="goal" name="goal" class="form-select @error('goal') is-invalid @enderror">
+                                    <option value="">Seleziona…</option>
+                                    <option value="1k"   @selected(old('goal')==='1k')>Arrivare a 1.000€/mese</option>
+                                    <option value="3k"   @selected(old('goal')==='3k')>Arrivare a 3.000€/mese</option>
+                                    <option value="5k"   @selected(old('goal')==='5k')>Arrivare a 5.000€/mese</option>
+                                    <option value="10k"  @selected(old('goal')==='10k')>Arrivare a 10.000€/mese</option>
+                                    <option value="more" @selected(old('goal')==='more')>Oltre 10.000€/mese</option>
+                                </select>
+                                @error('goal')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+
+                            <!-- Messaggio -->
+                            <div class="col-12">
+                                <label for="message" class="form-label fw-semibold">Messaggio</label>
+                                <textarea
+                                    class="form-control @error('message') is-invalid @enderror"
+                                    id="message"
+                                    name="message"
+                                    rows="7"
+                                    required
+                                    placeholder="Scrivi 4 cose secche:
+                    1) punto di partenza
+                    2) obiettivo
+                    3) cosa vuoi delegare (contenuti / social / ads / messaggi / pricing)
+                    4) città e disponibilità per shooting (se ti interessa)"
+                                >{{ old('message') }}</textarea>
+
+                                <div class="d-flex justify-content-between align-items-center mt-2">
+                                    <div class="form-text">
+                                        Più sei specifica, più la risposta sarà utile. Non serve raccontare la vita.
+                                    </div>
+                                    <div class="small text-muted" id="msgCounter">0 / 800</div>
+                                </div>
+
+                                @error('message')
+                                    <div class="invalid-feedback d-block">{{ $message }}</div>
+                                @enderror
+                            </div>
+
+                            <!-- Nota -->
+                            <div class="col-12">
+                                <div class="ws-note">
+                                    <div class="d-flex gap-2">
+                                        <i class="fa-solid fa-circle-info mt-1 text-danger"></i>
+                                        <div class="small text-muted">
+                                            Non chiediamo link pubblici o info inutili. Se serve, approfondiamo dopo in privato.
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Consenso privacy -->
+                            <div class="col-12">
+                                <div class="form-check">
+                                    <input
+                                        class="form-check-input @error('privacy') is-invalid @enderror"
+                                        type="checkbox"
+                                        value="1"
+                                        id="privacy"
+                                        name="privacy"
+                                        @checked(old('privacy'))
+                                        required
+                                    >
+                                    <label class="form-check-label" for="privacy">
+                                        Ho letto e accetto la <a href="{{ route('cookie-policy') }}" class="text-decoration-none">Cookie Policy</a>
+                                        e l’informativa privacy (minimo indispensabile).
+                                    </label>
+                                    @error('privacy')
+                                        <div class="invalid-feedback d-block">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                            </div>
+
+                            <!-- Buttons -->
+                            <div class="col-12">
+                                <div class="d-flex flex-wrap gap-2 mt-2">
+                                    <button type="submit" class="btn btn-danger btn-lg">
+                                        <i class="fa-solid fa-paper-plane me-2"></i>Invia richiesta
+                                    </button>
+                                    <a href="{{ route('servizi') }}" class="btn btn-outline-secondary btn-lg">
+                                        <i class="fa-solid fa-arrow-left me-2"></i>Torna ai servizi
+                                    </a>
                                 </div>
                             </div>
                         </div>
-
-                        <div class="d-flex flex-wrap gap-2">
-                            <button type="submit" class="btn btn-danger btn-lg">
-                                <i class="fa-solid fa-paper-plane me-2"></i>Invia richiesta
-                            </button>
-                            <a href="{{ route('servizi') }}" class="btn btn-outline-secondary btn-lg">
-                                <i class="fa-solid fa-arrow-left me-2"></i>Torna ai servizi
-                            </a>
-                        </div>
                     </form>
+
+                    <script>
+                    (function () {
+                        const ta = document.getElementById('message');
+                        const counter = document.getElementById('msgCounter');
+                        if (!ta || !counter) return;
+
+                        const MAX = 800;
+                        const update = () => {
+                            const len = (ta.value || '').length;
+                            counter.textContent = `${len} / ${MAX}`;
+                            if (len > MAX) counter.classList.add('text-danger');
+                            else counter.classList.remove('text-danger');
+                        };
+
+                        ta.addEventListener('input', update);
+                        update();
+                    })();
+                    </script>
+
                 </div>
             </div>
         </div>
