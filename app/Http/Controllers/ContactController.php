@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ContactSubmission;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -24,70 +25,66 @@ class ContactController extends Controller
             'privacy.accepted' => 'Devi accettare l’informativa per poter inviare il messaggio.',
         ]);
 
-        $startMap = [
-            'zero'     => 'Da zero (nessun profilo / profilo vuoto)',
-            'social'   => 'Social attivi ma niente funnel',
-            'onlyfans' => 'OnlyFans già attivo ma rende poco',
-            'restart'  => 'Ripartenza / rilancio',
-        ];
-
-        $goalMap = [
-            '1k'   => '1.000€/mese',
-            '3k'   => '3.000€/mese',
-            '5k'   => '5.000€/mese',
-            '10k'  => '10.000€/mese',
-            'more' => 'Oltre 10.000€/mese',
-        ];
+        $submission = ContactSubmission::create([
+            'name'       => $data['name'],
+            'email'      => $data['email'],
+            'instagram'  => $data['instagram'] ?? null,
+            'start_level'=> $data['start_level'] ?? null,
+            'goal'       => $data['goal'] ?? null,
+            'message'    => trim((string)$data['message']),
+            'ip'         => $request->ip(),
+            'user_agent' => (string)$request->userAgent(),
+            'mail_sent'  => false,
+        ]);
 
         $subject = 'Nuova richiesta contatto - OFBooster';
 
         $textBody = implode("\n", array_filter([
             "Nuova richiesta dal form contatti OFBooster",
             "------------------------------------------",
-            "Nome: {$data['name']}",
-            "Email: {$data['email']}",
-            "Instagram/Social: " . (!empty($data['instagram']) ? trim($data['instagram']) : '—'),
-            "Da dove parte: " . (!empty($data['start_level']) ? ($startMap[$data['start_level']] ?? $data['start_level']) : '—'),
-            "Obiettivo: " . (!empty($data['goal']) ? ($goalMap[$data['goal']] ?? $data['goal']) : '—'),
+            "Nome: {$submission->name}",
+            "Email: {$submission->email}",
+            "Instagram/Social: " . ($submission->instagram ?: '—'),
+            "Start: " . ($submission->start_level ?: '—'),
+            "Goal: " . ($submission->goal ?: '—'),
             "",
             "Messaggio:",
-            trim($data['message']),
+            $submission->message,
             "",
             "------------------------------------------",
-            "IP: " . $request->ip(),
-            "User-Agent: " . (string) $request->userAgent(),
+            "IP: " . ($submission->ip ?: '—'),
+            "User-Agent: " . ($submission->user_agent ?: '—'),
             "Data: " . now()->format('d/m/Y H:i:s'),
         ]));
 
         try {
-            // ✅ modo corretto con Symfony Mailer: raw text
             Mail::raw($textBody, function ($m) use ($data, $subject) {
                 $m->to(self::DEST_EMAIL)
                   ->subject($subject)
                   ->replyTo($data['email'], $data['name']);
             });
 
-            return redirect()
-                ->route('contatti')
-                ->with('success', 'Perfetto: richiesta inviata. Ti rispondiamo entro 24 ore.');
-        } catch (\Throwable $e) {
-            Log::error('CONTACT_FORM_SEND_FAILED', [
-                'err'     => $e->getMessage(),
-                'payload' => [
-                    'name' => $data['name'] ?? null,
-                    'email' => $data['email'] ?? null,
-                    'instagram' => $data['instagram'] ?? null,
-                    'start_level' => $data['start_level'] ?? null,
-                    'goal' => $data['goal'] ?? null,
-                ],
+            $submission->update([
+                'mail_sent' => true,
+                'mail_error' => null,
             ]);
 
-            return redirect()
-                ->route('contatti')
+            return redirect()->route('contatti')
+                ->with('success', 'Perfetto: richiesta inviata. Ti rispondiamo entro 24 ore.');
+        } catch (\Throwable $e) {
+            $submission->update([
+                'mail_sent' => false,
+                'mail_error' => $e->getMessage(),
+            ]);
+
+            Log::error('CONTACT_FORM_SEND_FAILED', [
+                'err' => $e->getMessage(),
+                'submission_id' => $submission->id,
+            ]);
+
+            return redirect()->route('contatti')
                 ->withInput()
-                ->withErrors([
-                    'email' => 'Invio fallito (problema tecnico). Riprova tra poco.',
-                ]);
+                ->withErrors(['email' => 'Invio fallito (problema tecnico). Riprova tra poco.']);
         }
     }
 }
