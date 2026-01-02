@@ -12,7 +12,6 @@ class ContactController extends Controller
 
     public function send(Request $request)
     {
-        // Validazione "seria"
         $data = $request->validate([
             'name'        => ['required', 'string', 'max:255'],
             'email'       => ['required', 'email', 'max:255'],
@@ -25,15 +24,11 @@ class ContactController extends Controller
             'privacy.accepted' => 'Devi accettare l’informativa per poter inviare il messaggio.',
         ]);
 
-        // Normalizzazione leggera
-        $data['instagram'] = isset($data['instagram']) ? trim((string)$data['instagram']) : null;
-        $data['message']   = trim((string)$data['message']);
-
         $startMap = [
-            'zero'    => 'Da zero (nessun profilo / profilo vuoto)',
-            'social'  => 'Social attivi ma niente funnel',
-            'onlyfans'=> 'OnlyFans già attivo ma rende poco',
-            'restart' => 'Ripartenza / rilancio',
+            'zero'     => 'Da zero (nessun profilo / profilo vuoto)',
+            'social'   => 'Social attivi ma niente funnel',
+            'onlyfans' => 'OnlyFans già attivo ma rende poco',
+            'restart'  => 'Ripartenza / rilancio',
         ];
 
         $goalMap = [
@@ -46,32 +41,30 @@ class ContactController extends Controller
 
         $subject = 'Nuova richiesta contatto - OFBooster';
 
-        // Body testuale (pulito e leggibile)
         $textBody = implode("\n", array_filter([
             "Nuova richiesta dal form contatti OFBooster",
             "------------------------------------------",
             "Nome: {$data['name']}",
             "Email: {$data['email']}",
-            "Instagram/Social: " . ($data['instagram'] ?: '—'),
-            "Da dove parte: " . ($data['start_level'] ? ($startMap[$data['start_level']] ?? $data['start_level']) : '—'),
-            "Obiettivo: " . ($data['goal'] ? ($goalMap[$data['goal']] ?? $data['goal']) : '—'),
+            "Instagram/Social: " . (!empty($data['instagram']) ? trim($data['instagram']) : '—'),
+            "Da dove parte: " . (!empty($data['start_level']) ? ($startMap[$data['start_level']] ?? $data['start_level']) : '—'),
+            "Obiettivo: " . (!empty($data['goal']) ? ($goalMap[$data['goal']] ?? $data['goal']) : '—'),
             "",
             "Messaggio:",
-            $data['message'],
+            trim($data['message']),
             "",
             "------------------------------------------",
             "IP: " . $request->ip(),
-            "User-Agent: " . (string)$request->userAgent(),
+            "User-Agent: " . (string) $request->userAgent(),
             "Data: " . now()->format('d/m/Y H:i:s'),
         ]));
 
         try {
-            Mail::send([], [], function ($message) use ($data, $subject, $textBody) {
-                $message->to(self::DEST_EMAIL)
-                    ->subject($subject)
-                    ->replyTo($data['email'], $data['name'])
-                    ->text('text/plain')
-                    ->setBody($textBody, 'text/plain');
+            // ✅ modo corretto con Symfony Mailer: raw text
+            Mail::raw($textBody, function ($m) use ($data, $subject) {
+                $m->to(self::DEST_EMAIL)
+                  ->subject($subject)
+                  ->replyTo($data['email'], $data['name']);
             });
 
             return redirect()
@@ -79,9 +72,14 @@ class ContactController extends Controller
                 ->with('success', 'Perfetto: richiesta inviata. Ti rispondiamo entro 24 ore.');
         } catch (\Throwable $e) {
             Log::error('CONTACT_FORM_SEND_FAILED', [
-                'err' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-                'payload' => $data,
+                'err'     => $e->getMessage(),
+                'payload' => [
+                    'name' => $data['name'] ?? null,
+                    'email' => $data['email'] ?? null,
+                    'instagram' => $data['instagram'] ?? null,
+                    'start_level' => $data['start_level'] ?? null,
+                    'goal' => $data['goal'] ?? null,
+                ],
             ]);
 
             return redirect()
