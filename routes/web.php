@@ -16,3 +16,4 @@ Route::get('/contatti', function () {
 })->name('contatti');
 
 Route::post('/contatti', [ContactController::class, 'send'])->name('contatti.send');
+Route::view('/cookie-policy', 'cookie-policy')->name('cookie-policy');
